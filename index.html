@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>HỌC TRỰC TUYẾN</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background-color: #003366;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 85%;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      padding: 20px;
+    }
+    .btn {
+      background-color: #003366;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #002244;
+    }
+    input[type="text"] {
+      padding: 8px;
+      width: calc(40% - 16px);
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .meeting-code {
+      background-color: #e6e6e6;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 16px;
+      text-align: center;
+      margin: 20px 0;
+      display: none;
+    }
+    #iframeContainer {
+      margin-top: 20px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 20px 0;
+    }
+  </style>
+  <script>
+    // Hàm tạo cuộc họp mới qua API Daily.co
+    async function createMeeting() {
+      const token = "c2db23acc6fa230dcaf8c9558a51b98e79c4f9ba6db6e2670fd2cc171667c196"; // API token Daily.co (không nên để lộ trên client-side trong sản phẩm thực)
+      const url = "https://api.daily.co/v1/rooms";
+      const roomName = "room-" + new Date().getTime(); // Tạo tên phòng độc nhất
+      const payload = {
+        name: roomName,
+        properties: {
+          enable_prejoin_ui: false
+        }
+      };
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(errorData);
+        }
+
+        const data = await response.json();
+        // data.url chứa đường dẫn phòng, ví dụ: "https://your-domain.daily.co/room-..."
+        const dailyUrl = data.url;
+
+        // Hiển thị mã phòng cho người dùng
+        const meetingCodeDisplay = document.getElementById('meetingCodeDisplay');
+        meetingCodeDisplay.style.display = "block";
+        meetingCodeDisplay.innerHTML = "<strong>Mã buổi học:</strong> " + roomName;
+
+        // Nhúng iframe để hiển thị cuộc họp
+        document.getElementById('iframeContainer').innerHTML =
+          "<iframe src='" + dailyUrl + "' allow='camera; microphone; fullscreen; display-capture' style='width:100%; height:600px; border:0;'></iframe>";
+      } catch (error) {
+        console.error("Có lỗi khi tạo cuộc họp:", error);
+        document.getElementById('result').innerHTML = "<p style='color:red;'>Lỗi: " + error.message + "</p>";
+      }
+    }
+
+    // Hàm tham gia cuộc họp dựa trên mã buổi học nhập vào
+    function joinMeeting() {
+      const meetingCode = document.getElementById('meetingCode').value.trim();
+      if (meetingCode) {
+        // Thay "biologyslife.daily.co" nếu cần, hoặc dùng tên miền mặc định của Daily.co
+        const dailyUrl = "https://biologyslife.daily.co/" + meetingCode;
+        const meetingCodeDisplay = document.getElementById('meetingCodeDisplay');
+        meetingCodeDisplay.style.display = "block";
+        meetingCodeDisplay.innerHTML = "<strong>Mã buổi học:</strong> " + meetingCode;
+        document.getElementById('iframeContainer').innerHTML =
+          "<iframe src='" + dailyUrl + "' allow='camera; microphone; fullscreen; display-capture' style='width:100%; height:600px; border:0;'></iframe>";
+      } else {
+        alert("Vui lòng nhập mã buổi học!");
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="header">
+    <h1>HỌC TRỰC TUYẾN</h1>
+  </div>
+  <div class="container">
+    <!-- Phần hiển thị mã phòng khi tạo thành công -->
+    <div id="meetingCodeDisplay" class="meeting-code"></div>
+    <hr>
+    <div>
+      <input type="text" id="meetingCode" placeholder="Nhập mã buổi học">
+      <button class="btn" onclick="joinMeeting()">Tham gia</button>
+      <button class="btn" onclick="createMeeting()">Tạo mới</button>
+    </div>
+    <div id="iframeContainer"></div>
+    <div id="result"></div>
+  </div>
+</body>
+</html>
